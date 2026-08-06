@@ -102,4 +102,9 @@ class AudioEngine(QObject):
         if self.device.running:
             self.device.stop()
 
+        # Reset variables for tracking time
+        self.frames_played = 0
+        self.last_emitted_second = -1
+
+        # Set is_finished to True
         self.is_finished = True
