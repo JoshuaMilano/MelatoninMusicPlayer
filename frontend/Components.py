@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QMenuBar, QMenu, QFileDialog
-from PySide6.QtGui import QAction, QCloseEvent
+from PySide6.QtWidgets import QVBoxLayout, QMainWindow, QWidget, QMenuBar, QMenu, QFileDialog, QProgressBar
+from PySide6.QtGui import QAction
 from PySide6.QtCore import QSize
 
 from backend.AudioEngine import AudioEngine
@@ -18,12 +18,20 @@ class MainWindow(QMainWindow):
         # Layout Creation
         layout = QVBoxLayout()
 
+        # Create the control bar
+        self.control_bar = ControlBar()
+
+        layout.addWidget(self.control_bar)
+
         widget = QWidget()
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
         self.menu_bar = MenuBar(self.audioEngine)
         self.setMenuBar(self.menu_bar)
+
+        self.audioEngine.total_playback_time.connect(self.control_bar.progress_bar.setMaximum)
+        self.audioEngine.current_playback_time.connect(self.control_bar.progress_bar.setValue)
 
     def closeEvent(self, event):
         self.audioEngine.stop_playback()
@@ -77,3 +85,17 @@ class MenuBar(QMenuBar):
 
     def stop_song(self):
         self.audio_engine.stop_playback()
+
+class ControlBar(QWidget):
+    def __init__(self):
+        super().__init__()
+        # Create the Progress bar, and set it's range to 0 - 100
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setTextVisible(False)
+
+        # Create the layout
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        layout.addWidget(self.progress_bar)
+
