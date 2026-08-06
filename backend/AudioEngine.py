@@ -23,7 +23,7 @@ class StreamProxy:
 
                 # Only update the UI when the current_seconds are greater then the last emitted second
                 if current_seconds > self.engine.last_emitted_second:
-                    self.engine.time_updated.emit(current_seconds)
+                    self.engine.current_playback_time.emit(current_seconds)
                     self.engine.last_emitted_second = current_seconds
 
             # Pass the raw_stream data to the C-Thread
