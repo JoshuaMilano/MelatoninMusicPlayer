@@ -1,10 +1,10 @@
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication
 from frontend.Components import MainWindow
 from frontend.Styles import STYLESHEET
 
 if __name__ == '__main__':
     app = QApplication([])
     app.setStyleSheet(STYLESHEET)
-    window = MainWindow()
+    window = MainWindow('Melatonin Music Player')
     window.show()
     app.exec()

@@ -1,7 +1,7 @@
-backend/
 database/
 env/
 __pycache__/
+TEST_MUSIC
 
 main.py
 
