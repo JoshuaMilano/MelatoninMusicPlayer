@@ -19,12 +19,12 @@ class StreamProxy:
                 self.engine.frames_played += framecount
 
                 # Convert total frames to seconds
-                current_seconds = self.engine.frames_played // self.engine.device.sample_rate
+                current_milliseconds = (self.engine.frames_played * 1000) // self.engine.device.sample_rate
 
                 # Only update the UI when the current_seconds are greater then the last emitted second
-                if current_seconds > self.engine.last_emitted_second:
-                    self.engine.current_playback_time.emit(current_seconds)
-                    self.engine.last_emitted_second = current_seconds
+                if current_milliseconds - self.engine.last_emitted_millisecond>= 50:
+                    self.engine.current_playback_time.emit(current_milliseconds)
+                    self.engine.last_emitted_millisecond = current_milliseconds
 
             # Pass the raw_stream data to the C-Thread
             return data
@@ -67,7 +67,7 @@ class AudioEngine(QObject):
 
         # Set variables for tracking time
         self.frames_played = 0
-        self.last_emitted_second = -1
+        self.last_emitted_millisecond = -50
         
     def start_playback(self, file_path_str):
         # Stop anything currently playing
@@ -79,7 +79,7 @@ class AudioEngine(QObject):
 
         # Reset variables for tracking time
         self.frames_played = 0
-        self.last_emitted_second = -1
+        self.last_emitted_millisecond = -50
         
         # miniaudio requires the path to be a string.
         file_path = str(file_path_str)
@@ -88,7 +88,7 @@ class AudioEngine(QObject):
         audio_metadata = mutagen.File(file_path)
         if audio_metadata:
             # Get duration of song (in seconds)
-            duration = int(audio_metadata.info.length)
+            duration = int(audio_metadata.info.length * 1000)
             self.total_playback_time.emit(duration)
 
         # Load the file, start the device.
@@ -104,7 +104,7 @@ class AudioEngine(QObject):
 
         # Reset variables for tracking time
         self.frames_played = 0
-        self.last_emitted_second = -1
+        self.last_emitted_millisecond = -50
 
         # Set is_finished to True
         self.is_finished = True
