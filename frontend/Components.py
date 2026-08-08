@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt, QSize
 
 from backend.AudioEngine import AudioEngine
 
+
 class MainWindow(QMainWindow):
     def __init__(self, title: str):
         super().__init__()
@@ -31,7 +32,13 @@ class MainWindow(QMainWindow):
         self.setMenuBar(self.menu_bar)
 
         self.audioEngine.total_playback_time.connect(self.control_bar.duration_bar.setMaximum)
-        self.audioEngine.current_playback_time.connect(self.control_bar.duration_bar.setValue)
+        self.audioEngine.current_playback_time.connect(self.update_slider_position)
+        self.audioEngine.file_currently_loaded.connect(self.control_bar.duration_bar.setEnabled)
+        self.control_bar.duration_bar.sliderMoved.connect(self.audioEngine.change_playback_millisecond_position)
+
+    def update_slider_position(self, current_ms):
+        if not self.control_bar.duration_bar.isSliderDown():
+            self.control_bar.duration_bar.setValue(current_ms)
 
     def closeEvent(self, event):
         self.audioEngine.stop_playback()
@@ -91,6 +98,7 @@ class ControlBar(QWidget):
         super().__init__()
         # Create the Progress bar, and set it's range to 0 - 100
         self.duration_bar = QSlider(Qt.Horizontal)
+        self.duration_bar.setEnabled(False)
 
         # Create the layout
         layout = QVBoxLayout()
