@@ -2,6 +2,7 @@ import miniaudio, re, mutagen
 from PySide6.QtCore import QObject, Signal
 from dataclasses import dataclass
 from pathlib import Path
+import gc
 
 from backend.BackendHelpers import sanitise_data, get_primary_artist
 
@@ -10,7 +11,7 @@ from backend.BackendHelpers import sanitise_data, get_primary_artist
 
 
 # This controls the framerate of the UI audio slider.
-slider_framerate = 25
+slider_framerate = 60
 
 @dataclass
 class SongMetadata:
@@ -89,7 +90,7 @@ class StreamProxy:
 
 
             # return the data as bytes
-            return bytes(chunk)
+            return chunk.tobytes()
 
         except StopIteration:
             self.engine.audio_playing = False
@@ -141,6 +142,13 @@ class AudioEngine(QObject):
         # Emit file_currently_loaded
         self.file_currently_loaded.emit(False)
 
+    def unload_audio(self):
+        # Stop The Audio, unload the audio
+        self.device.close()
+        self.file_in_memory = None
+        self.stream = None
+        gc.collect()
+
     def start_playback(self, file_path):
         # if the device is running, stop playback
         if self.device.running:
@@ -173,7 +181,8 @@ class AudioEngine(QObject):
         self.device = miniaudio.PlaybackDevice(
             output_format=miniaudio.SampleFormat.SIGNED16,
             nchannels=self.file_in_memory.nchannels,
-            sample_rate=self.file_in_memory.sample_rate
+            sample_rate=self.file_in_memory.sample_rate,
+            buffersize_msec= 1000 // slider_framerate
         )
 
         self.stream = StreamProxy(self.file_in_memory, self)
@@ -188,7 +197,7 @@ class AudioEngine(QObject):
     def stop_playback(self):
         # If the stream device is running, stop it.
         if self.device.running:
-            self.device.stop()
+            self.unload_audio()
 
         # set frames played to 0
         self.frames_played = 0
@@ -201,6 +210,14 @@ class AudioEngine(QObject):
 
         # Emit file_currently_loaded
         self.file_currently_loaded.emit(False)
+
+    def resume_playback(self):
+        if not self.device.running:
+            self.device.start(self.stream)
+
+    def pause_playback(self):
+        if self.device.running:
+            self.device.stop()
 
     def change_playback_millisecond_position(self, target_ms):
         
