@@ -2,6 +2,7 @@ database/
 env/
 __pycache__/
 TEST_MUSIC
+.vscode
 
 main.py
 
