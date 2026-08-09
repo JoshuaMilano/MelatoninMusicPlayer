@@ -1,22 +1,25 @@
-STYLESHEET = """
-QMainWindow {
-    background-color: #403D88;
-}
+background_colour = '#403D88'
 
-QSlider::groove:horizontal {
+
+STYLESHEET = f'''
+QMainWindow {{
+    background-color: {background_colour};
+}}
+
+QSlider::groove:horizontal {{
     background: #8B639B;
-}
+}}
 
-QSlider::handle:horizontal {
+QSlider::handle:horizontal {{
     height: 8px;
     background: transparent;
-}
+}}
 
-QSlider::add-page:horizontal {
+QSlider::add-page:horizontal {{
     background: transparent;
-}
+}}
 
-QSlider::sub-page:horizontal {
+QSlider::sub-page:horizontal {{
     background: #AF719D;
-}
-"""
+}}
+'''
