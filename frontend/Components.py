@@ -1,25 +1,34 @@
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import Qt, QAction, QMouseEvent
 from PySide6.QtWidgets import (
-    QVBoxLayout,
-    QHBoxLayout,
-    QMainWindow,
-    QWidget,
-    QMenuBar,
-    QMenu,
+    QDialog,
     QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMenu,
+    QMenuBar,
+    QPushButton,
     QSlider,
-    QPushButton
+    QVBoxLayout,
+    QWidget
 )
 
 from backend.AudioEngine import AudioEngine
-
+from database.Database import Database
 
 class MainWindow(QMainWindow):
     def __init__(self, title: str):
         super().__init__()
 
+        # Create the AudioEngine
         self.audio_engine = AudioEngine()
+
+        # Create the Database
+        self.database = Database()
+
+        self.check_db()
 
         # Window Config
         self.setWindowTitle(title)
@@ -38,32 +47,64 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        self.menu_bar = MenuBar(self.audio_engine)
+        self.menu_bar = MenuBar(self.audio_engine, self.database)
         self.setMenuBar(self.menu_bar)
-
 
     def closeEvent(self, event):
         self.audio_engine.stop_playback()
         return super().closeEvent(event)
 
+    def check_db(self):
+        if not self.database.db:
+            dialog = BuildDatabaseDialog(self)
+            dialog.exec()
+            new_database_folder = dialog.folder_picker.path_display.text()
+            self.database.set_new_location(new_database_folder)
+
+
+# class MainContent():
+
+class BuildDatabaseDialog(QDialog):
+    """Shows a popup to pick a database location"""
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setWindowTitle('Pick a database location')
+        layout = QVBoxLayout()
+
+        message = QLabel('Melatonin requires a database to organise and display music.\nPick a database location?')
+
+        self.folder_picker = FolderPicker()
+        self.submit_button = QPushButton('Confirm')
+        self.submit_button.clicked.connect(self.accept)
+
+        layout.addWidget(message)
+        layout.addWidget(self.folder_picker)
+        layout.addWidget(self.submit_button)
+        self.setLayout(layout)
+
+
 class MenuBar(QMenuBar):
-    def __init__(self, audio_engine: AudioEngine):
+    def __init__(self, audio_engine: AudioEngine, database: Database):
         super().__init__()
 
         # Pass the audio engine through
         self.audio_engine = audio_engine
+        self.database = database
 
         # File Menu
         file_menu = QMenu('&File', self)
         self.addMenu(file_menu)
         load_song_action = QAction('Load Song', self)
         stop_song_action = QAction('Unload Song', self)
+        rebuild_database_action = QAction('Rebuild Database', self)
         load_song_action.setShortcut('CTRL+L')
-        stop_song_action.setShortcut('CTRL+K')
+        # stop_song_action.setShortcut('CTRL+K')
         load_song_action.triggered.connect(self.load_song)
         stop_song_action.triggered.connect(self.stop_song)
+        rebuild_database_action.triggered.connect(self.rebuild_database)
         file_menu.addAction(load_song_action)
         file_menu.addAction(stop_song_action)
+        file_menu.addAction(rebuild_database_action)
 
         # Preferences Menu
         pref_menu = QMenu('&Settings', self)
@@ -95,6 +136,8 @@ class MenuBar(QMenuBar):
     def stop_song(self):
         self.audio_engine.stop_playback()   
 
+    def rebuild_database(self):
+        self.database.rebuild()
 
 class ControlBar(QWidget):
     def __init__(self, audio_engine: AudioEngine):
@@ -164,3 +207,33 @@ class MediaSlider(QSlider):
 
             event.accept()
         super().mousePressEvent(event)
+
+class FolderPicker(QWidget):
+    def __init__(self, *, label_text: str = 'Select a folder', placeholder: str = 'Select a folder...'):
+        super().__init__()
+        widget_layout = QVBoxLayout()
+
+        self.label = QLabel(label_text)
+        widget_layout.addWidget(self.label)
+        widget_layout.setSpacing(5)
+
+        folder_select_layout = QHBoxLayout()
+
+        self.path_display = QLineEdit()
+        self.path_display.setPlaceholderText(placeholder)
+
+        self.browse_button = QPushButton('Browse...')
+        self.browse_button.clicked.connect(self.open_folder_dialog)
+
+        folder_select_layout.addWidget(self.path_display)
+        folder_select_layout.addWidget(self.browse_button)
+
+        widget_layout.addLayout(folder_select_layout)
+
+        self.setLayout(widget_layout)
+
+    def open_folder_dialog(self):
+        folder_path = QFileDialog.getExistingDirectory(self, 'Select a Folder')
+
+        if folder_path:
+            self.path_display.setText(folder_path)
