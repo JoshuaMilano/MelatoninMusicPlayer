@@ -3,7 +3,7 @@ __pycache__/
 TEST_MUSIC
 .vscode
 
-main.py
+*.sql
 
 # Sample Files
 Abandon Ship.flac
