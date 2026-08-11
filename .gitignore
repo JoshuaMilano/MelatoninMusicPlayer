@@ -5,6 +5,4 @@ TEST_MUSIC
 
 *.sql
 
-# Sample Files
-Abandon Ship.flac
-Mr. Brightside.flac
+requirements.txt
