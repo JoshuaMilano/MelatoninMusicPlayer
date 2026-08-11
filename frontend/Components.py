@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import Qt, QAction, QMouseEvent
+from PySide6.QtGui import QAction, QMouseEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget
 )
 
-from backend.AudioEngine import AudioEngine
+from backend.AudioEngine import AudioEngine, EngineState
 from database.Database import Database
 
 class MainWindow(QMainWindow):
@@ -27,7 +27,6 @@ class MainWindow(QMainWindow):
 
         # Create the Database
         self.database = Database()
-
         self.check_db()
 
         # Window Config
@@ -146,21 +145,19 @@ class ControlBar(QWidget):
         self.audio_engine = audio_engine
 
         # Create the Progress bar, and set it's range to 0 - 100
-        self.duration_bar = MediaSlider(Qt.Horizontal)
+        self.duration_bar = MediaSlider(Qt.Orientation.Horizontal)
         self.duration_bar.setEnabled(False)
 
         # Create the layout to hold the buttons
         button_layout = QHBoxLayout()
 
         # Create the play and pause buttons
-        self.play_button = QPushButton('Play')
-        self.play_button.clicked.connect(self.play_music)
-        self.pause_button = QPushButton('Stop')
-        self.pause_button.clicked.connect(self.pause_music)
+        self.play_pause_button = QPushButton('Play')
+        self.play_pause_button.setEnabled(False)
+        self.play_pause_button.clicked.connect(self.play_pause_music)
 
-        # Add play and pause buttons to layout
-        button_layout.addWidget(self.play_button)
-        button_layout.addWidget(self.pause_button)
+        # Add the play/pause button to layout
+        button_layout.addWidget(self.play_pause_button)
 
         # Create the layout
         layout = QVBoxLayout()
@@ -170,10 +167,8 @@ class ControlBar(QWidget):
 
         self.audio_engine.total_playback_time.connect(self.duration_bar.setMaximum)
         self.audio_engine.current_playback_time.connect(self.update_slider_position)
-        self.audio_engine.file_currently_loaded.connect(self.duration_bar.setEnabled)
-        self.audio_engine.file_currently_loaded.connect(self.play_button.setEnabled)
-        self.audio_engine.file_currently_loaded.connect(self.pause_button.setEnabled)
         self.duration_bar.sliderMoved.connect(self.audio_engine.change_playback_millisecond_position)
+        self.audio_engine.engine_state_changed.connect(self.sync_ui_to_engine)
 
     def update_slider_position(self, current_ms):
         if not self.duration_bar.isSliderDown():
@@ -185,9 +180,30 @@ class ControlBar(QWidget):
     def pause_music(self):
         self.audio_engine.pause_playback()
 
+    def play_pause_music(self):
+        if self.audio_engine.device.running:
+            self.audio_engine.pause_playback()
+        else:
+            self.audio_engine.resume_playback()
+
+    def sync_ui_to_engine(self, state: EngineState):
+        if state == EngineState.PLAYING:
+            self.duration_bar.setEnabled(True)
+            self.play_pause_button.setEnabled(True)
+            self.play_pause_button.setText('Pause')
+        elif state == EngineState.PAUSED:
+            self.duration_bar.setEnabled(True)
+            self.play_pause_button.setEnabled(True)
+            self.play_pause_button.setText('Play')
+        elif state == EngineState.STOPPED:
+            self.duration_bar.setEnabled(False)
+            self.play_pause_button.setEnabled(False)
+            self.play_pause_button.setText('Play')
+            self.duration_bar.setValue(0)
+
 class MediaSlider(QSlider):
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             # Grab pixel user clicked on
             click_position = event.position().x()
             # Grab width of slider
