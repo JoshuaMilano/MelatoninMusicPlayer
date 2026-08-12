@@ -1,10 +1,8 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QDialog,
     QFileDialog,
     QHBoxLayout,
-    QLabel,
     QMainWindow,
     QMenu,
     QMenuBar,
@@ -13,9 +11,10 @@ from PySide6.QtWidgets import (
     QWidget
 )
 
+from frontend.Widgets import MediaSlider
+from frontend.Dialogs import BuildDatabaseDialog
 from backend.AudioEngine import AudioEngine, EngineState
 from database.Database import Database
-from frontend.Widgets import FolderPicker, MediaSlider
 
 class MainWindow(QMainWindow):
     def __init__(self, title: str):
@@ -59,27 +58,7 @@ class MainWindow(QMainWindow):
             new_database_folder = dialog.folder_picker.path_display.text()
             self.database.set_new_location(new_database_folder)
 
-
 # class MainContent():
-
-class BuildDatabaseDialog(QDialog):
-    """Shows a popup to pick a database location"""
-    def __init__(self, parent = None):
-        super().__init__(parent)
-        self.setWindowTitle('Pick a database location')
-        layout = QVBoxLayout()
-
-        message = QLabel('Melatonin requires a database to organise and display music.\nPick a database location?')
-
-        self.folder_picker = FolderPicker()
-        self.submit_button = QPushButton('Confirm')
-        self.submit_button.clicked.connect(self.accept)
-
-        layout.addWidget(message)
-        layout.addWidget(self.folder_picker)
-        layout.addWidget(self.submit_button)
-        self.setLayout(layout)
-
 
 class MenuBar(QMenuBar):
     def __init__(self, audio_engine: AudioEngine, database: Database):
@@ -199,4 +178,3 @@ class ControlBar(QWidget):
             self.play_pause_button.setEnabled(False)
             self.play_pause_button.setText('Play')
             self.duration_bar.setValue(0)
-
