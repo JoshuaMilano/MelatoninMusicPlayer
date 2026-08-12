@@ -1,0 +1,1 @@
+Music Player can't handle folders in non-english characters
