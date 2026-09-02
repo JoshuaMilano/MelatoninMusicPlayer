@@ -12,6 +12,7 @@ class EngineState(Enum):
     STOPPED = auto()
     PLAYING = auto()
     PAUSED = auto()
+    FINISHED = auto()
 
 # This controls the framerate of the UI audio slider.
 slider_framerate = 60
@@ -45,7 +46,9 @@ class StreamProxy:
 
             # If that chunk was empty, the song finished
             if not chunk:
-                self.engine.audio_playing = False
+                if self.engine.engine_state != EngineState.FINISHED:
+                    self.engine.engine_state = EngineState.FINISHED
+                    print('finished')
                 return b''
 
             # Add number of frames played to frames_played variable
@@ -63,7 +66,7 @@ class StreamProxy:
             return chunk.tobytes()
 
         except StopIteration:
-            self.engine.audio_playing = False
+            self.engine.engine_state = EngineState.STOPPED
             return b''
 
         # These ensure miniaudio accepts the class as a valid iterator
@@ -89,7 +92,6 @@ class AudioEngine(QObject):
     total_playback_time = Signal(int)
     # Signal to relay current playback time (i.e. location in song stream) to the frontend ui
     current_playback_time = Signal(int)
-
     # Signal to sync the UI to the Engine
     engine_state_changed = Signal(object)
 
@@ -101,11 +103,10 @@ class AudioEngine(QObject):
         # Create an empty stream object to hold the data stream going to the device
         self.stream = None
 
-        # set the playing flag to false
-        self.audio_playing = False
-
         # Create and Set Engine State
-        self.engine_state_changed.emit(EngineState.STOPPED)
+        self.engine_state: EngineState = EngineState.STOPPED
+
+        self.engine_state_changed.emit(self.engine_state)
 
         # set the frames played to 0
         self.frames_played = 0
@@ -124,10 +125,10 @@ class AudioEngine(QObject):
         # if the device is running, stop playback
         if self.device.running:
             self.device.stop()
-            self.audio_playing = False
+            self.engine_state = EngineState.STOPPED
         
-        # set playing flag to true
-        self.audio_playing = True
+        # update engine state
+        self.engine_state = EngineState.PLAYING
 
         # set frames played to 0
         self.frames_played = 0
@@ -145,9 +146,18 @@ class AudioEngine(QObject):
         if metadata:
             duration = metadata.duration_ms
             self.total_playback_time.emit(duration)
-        
-        # Load entire song into memory, save as file_in_memory
-        self.file_in_memory = miniaudio.read_file(file_path, convert_to_16bit = True)
+
+        # With file, read in binary mode, and load that data into memory.
+        with open(file_path, 'rb') as file:
+            audio_bytes = file.read()
+
+        self.file_in_memory = miniaudio.decode(
+            audio_bytes,
+            output_format=miniaudio.SampleFormat.SIGNED16
+        )
+
+        # Close the file if it didn't close automatically.
+        file.close()
 
         self.device = miniaudio.PlaybackDevice(
             output_format=miniaudio.SampleFormat.SIGNED16,
@@ -162,7 +172,9 @@ class AudioEngine(QObject):
         self.device.start(self.stream)
 
         # Update Engine State
-        self.engine_state_changed.emit(EngineState.PLAYING)
+        
+        self.engine_state: EngineState = EngineState.PLAYING
+        self.engine_state_changed.emit(self.engine_state)
 
 
     def stop_playback(self):
@@ -176,21 +188,23 @@ class AudioEngine(QObject):
         # Track last emitted millisecond of music
         self.last_emitted_milliseconds = -(1000 // slider_framerate)
 
-        # Set playing flag to true
-        self.audio_playing = False
+        # Set engine state
+        self.engine_state: EngineState = EngineState.STOPPED
 
-        # Emit file_currently_loaded
+        # Emit engine_state
         self.engine_state_changed.emit(EngineState.STOPPED)
 
     def resume_playback(self):
         if not self.device.running:
-            self.device.start(self.stream)
-            self.engine_state_changed.emit(EngineState.PLAYING)
+            self.device.start(self.stream) # type: ignore
+            self.engine_state: EngineState = EngineState.PLAYING
+            self.engine_state_changed.emit(self.engine_state)
 
     def pause_playback(self):
         if self.device.running:
             self.device.stop()
-            self.engine_state_changed.emit(EngineState.PAUSED)
+            self.engine_state: EngineState = EngineState.PAUSED
+            self.engine_state_changed.emit(self.engine_state)
 
     def change_playback_millisecond_position(self, target_ms):
         

@@ -152,14 +152,14 @@ class ControlBar(QWidget):
         if not self.duration_bar.isSliderDown():
             self.duration_bar.setValue(current_ms)
 
-    def play_music(self):
-        self.audio_engine.resume_playback()
+    # def play_music(self):
+    #     self.audio_engine.resume_playback()
 
-    def pause_music(self):
-        self.audio_engine.pause_playback()
+    # def pause_music(self):
+    #     self.audio_engine.pause_playback()
 
     def play_pause_music(self):
-        if self.audio_engine.device.running:
+        if self.audio_engine.engine_state == EngineState.PLAYING:
             self.audio_engine.pause_playback()
         else:
             self.audio_engine.resume_playback()
@@ -176,5 +176,10 @@ class ControlBar(QWidget):
         elif state == EngineState.STOPPED:
             self.duration_bar.setEnabled(False)
             self.play_pause_button.setEnabled(False)
+            self.play_pause_button.setText('Play')
+            self.duration_bar.setValue(0)
+        elif state == EngineState.FINISHED:
+            self.duration_bar.setEnabled(True)
+            self.play_pause_button.setEnabled(True)
             self.play_pause_button.setText('Play')
             self.duration_bar.setValue(0)

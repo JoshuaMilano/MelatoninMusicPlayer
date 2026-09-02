@@ -27,6 +27,12 @@ class BuildDatabaseDialog(QDialog):
         layout.addWidget(self.submit_button)
         self.setLayout(layout)
 
+class PickLibraryDialog(QDialog):
+    """Shows a popup asking the user to pick their library folder"""
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setWindowTitle('Pick')
+
 class FolderPicker(QWidget):
     """UI Component to let the user pick a folder"""
     def __init__(self, *, label_text: str = 'Select a folder', placeholder: str = 'Select a folder...'):
