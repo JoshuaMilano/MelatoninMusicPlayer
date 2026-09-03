@@ -2,6 +2,7 @@ import miniaudio
 from PySide6.QtCore import QObject, Signal
 from enum import Enum, auto
 import gc
+import numpy as np
 
 from backend.SongHelpers import SongMetadata, get_song_metadata
 
@@ -16,6 +17,8 @@ class EngineState(Enum):
 
 # This controls the framerate of the UI audio slider.
 slider_framerate = 60
+
+DEBUG_VALUE_SOUND = 0.4
 
 # The Purpose of the StreamProxy is to hijack the connection between the AudioEngine and the miniaudio C library
 class StreamProxy:
@@ -42,14 +45,22 @@ class StreamProxy:
 
         try:
             # We grab a chunk of audio
-            chunk = self.decoded_sound_file.samples[memory_start_index:memory_end_index]
+            raw_chunk = self.decoded_sound_file.samples[memory_start_index:memory_end_index]
 
             # If that chunk was empty, the song finished
-            if not chunk:
+            if not raw_chunk:
                 if self.engine.engine_state != EngineState.FINISHED:
                     self.engine.engine_state = EngineState.FINISHED
                     print('finished')
                 return b''
+
+            # HARDCODED 16BIT AUDIO
+            resolution = np.iinfo(np.int16)
+
+            chunk = np.array(raw_chunk, dtype=resolution)
+
+            # Scale by volume and clip the audio file
+            scaled_chunk = np.clip(chunk * self.engine.volume, resolution.min, resolution.max).astype(chunk.dtype)
 
             # Add number of frames played to frames_played variable
             self.engine.frames_played += len(chunk) // self.decoded_sound_file_channels
@@ -63,7 +74,7 @@ class StreamProxy:
 
 
             # return the data as bytes
-            return chunk.tobytes()
+            return scaled_chunk.tobytes()
 
         except StopIteration:
             self.engine.engine_state = EngineState.STOPPED
@@ -102,6 +113,8 @@ class AudioEngine(QObject):
 
         # Create an empty stream object to hold the data stream going to the device
         self.stream = None
+
+        self.volume = DEBUG_VALUE_SOUND
 
         # Create and Set Engine State
         self.engine_state: EngineState = EngineState.STOPPED
@@ -151,6 +164,7 @@ class AudioEngine(QObject):
         with open(file_path, 'rb') as file:
             audio_bytes = file.read()
 
+        # HARDCODED 16BIT AUDIO
         self.file_in_memory = miniaudio.decode(
             audio_bytes,
             output_format=miniaudio.SampleFormat.SIGNED16
@@ -160,6 +174,7 @@ class AudioEngine(QObject):
         file.close()
 
         self.device = miniaudio.PlaybackDevice(
+            # HARDCODED 16BIT AUDIO
             output_format=miniaudio.SampleFormat.SIGNED16,
             nchannels=self.file_in_memory.nchannels,
             sample_rate=self.file_in_memory.sample_rate,
@@ -175,7 +190,6 @@ class AudioEngine(QObject):
         
         self.engine_state: EngineState = EngineState.PLAYING
         self.engine_state_changed.emit(self.engine_state)
-
 
     def stop_playback(self):
         # If the stream device is running, stop it.
@@ -205,6 +219,9 @@ class AudioEngine(QObject):
             self.device.stop()
             self.engine_state: EngineState = EngineState.PAUSED
             self.engine_state_changed.emit(self.engine_state)
+
+    def change_volume(self, volume_level):
+        self.volume = max(0.0, float(volume_level))
 
     def change_playback_millisecond_position(self, target_ms):
         
