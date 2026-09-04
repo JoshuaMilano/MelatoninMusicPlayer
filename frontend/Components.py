@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from frontend.Widgets import MediaSlider
-from frontend.Dialogs import BuildDatabaseDialog
+from frontend.Dialogs import BuildDataFolderDialog
 from backend.AudioEngine import AudioEngine, EngineState
 from database.Database import Database
 
@@ -53,7 +53,7 @@ class MainWindow(QMainWindow):
 
     def check_db(self):
         if not self.database.db:
-            dialog = BuildDatabaseDialog(self)
+            dialog = BuildDataFolderDialog(self)
             dialog.exec()
             new_database_folder = dialog.folder_picker.path_display.text()
             self.database.set_new_location(new_database_folder)

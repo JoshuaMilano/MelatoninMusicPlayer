@@ -9,14 +9,14 @@ from PySide6.QtWidgets import (
     QWidget
 )
 
-class BuildDatabaseDialog(QDialog):
-    """Shows a popup to pick a database location"""
+class BuildDataFolderDialog(QDialog):
+    """Shows a popup to pick a folder location"""
     def __init__(self, parent = None):
         super().__init__(parent)
-        self.setWindowTitle('Pick a database location')
+        self.setWindowTitle('Pick a data folder location')
         layout = QVBoxLayout()
 
-        message = QLabel('Melatonin requires a database to organise and display music.\nPick a database location?')
+        message = QLabel('Melatonin requires a folder to store a music database and user preferences.\nPick a folder location?')
 
         self.folder_picker = FolderPicker()
         self.submit_button = QPushButton('Confirm')
