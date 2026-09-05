@@ -18,7 +18,7 @@ class EngineState(Enum):
 # This controls the framerate of the UI audio slider.
 slider_framerate = 60
 
-DEBUG_VALUE_SOUND = 0.4
+DEBUG_VALUE_VOLUME = 0.25
 
 # The Purpose of the StreamProxy is to hijack the connection between the AudioEngine and the miniaudio C library
 class StreamProxy:
@@ -51,6 +51,7 @@ class StreamProxy:
             if not raw_chunk:
                 if self.engine.engine_state != EngineState.FINISHED:
                     self.engine.engine_state = EngineState.FINISHED
+                    self.engine.engine_state_changed.emit(self.engine.engine_state)
                     print('finished')
                 return b''
 
@@ -78,6 +79,7 @@ class StreamProxy:
 
         except StopIteration:
             self.engine.engine_state = EngineState.STOPPED
+            self.engine.engine_state_changed.emit(self.engine.engine_state)
             return b''
 
         # These ensure miniaudio accepts the class as a valid iterator
@@ -114,7 +116,7 @@ class AudioEngine(QObject):
         # Create an empty stream object to hold the data stream going to the device
         self.stream = None
 
-        self.volume = DEBUG_VALUE_SOUND
+        self.volume = DEBUG_VALUE_VOLUME
 
         # Create and Set Engine State
         self.engine_state: EngineState = EngineState.STOPPED

@@ -16,7 +16,7 @@ class BuildDataFolderDialog(QDialog):
         self.setWindowTitle('Pick a data folder location')
         layout = QVBoxLayout()
 
-        message = QLabel('Melatonin requires a folder to store a music database and user preferences.\nPick a folder location?')
+        message = QLabel('Melatonin requires a folder to store a music database and user preferences.\n\nPick a folder location or leave empty to use recommended location')
 
         self.folder_picker = FolderPicker()
         self.submit_button = QPushButton('Confirm')
@@ -26,6 +26,9 @@ class BuildDataFolderDialog(QDialog):
         layout.addWidget(self.folder_picker)
         layout.addWidget(self.submit_button)
         self.setLayout(layout)
+
+    def data(self) -> str:
+        return self.folder_picker.path
 
 class PickLibraryDialog(QDialog):
     """Shows a popup asking the user to pick their library folder"""
@@ -37,6 +40,9 @@ class FolderPicker(QWidget):
     """UI Component to let the user pick a folder"""
     def __init__(self, *, label_text: str = 'Select a folder', placeholder: str = 'Select a folder...'):
         super().__init__()
+
+        self.path: str = ''
+
         widget_layout = QVBoxLayout()
 
         self.label = QLabel(label_text)
@@ -47,6 +53,7 @@ class FolderPicker(QWidget):
 
         self.path_display = QLineEdit()
         self.path_display.setPlaceholderText(placeholder)
+        self.path_display.textChanged.connect(self._update_path)
 
         self.browse_button = QPushButton('Browse...')
         self.browse_button.clicked.connect(self.open_folder_dialog)
@@ -58,8 +65,12 @@ class FolderPicker(QWidget):
 
         self.setLayout(widget_layout)
 
+    def _update_path(self, path: str):
+        self.path = path
+
     def open_folder_dialog(self):
         folder_path = QFileDialog.getExistingDirectory(self, 'Select a Folder')
 
         if folder_path:
             self.path_display.setText(folder_path)
+            self.path = folder_path

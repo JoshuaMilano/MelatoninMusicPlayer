@@ -2,30 +2,21 @@ import sqlite3
 from pathlib import Path
 
 class Database():
-    def __init__(self, database_location: str = ''):
-        # Grab location of the MelatoninMusicPLayer folder
-        self.file_directory = database_location
-
+    def __init__(self, datafolder_location: str):
         # Create the database variable
         self.db = None
 
-    def set_new_location(self, new_folder: str):
-        """Sets a new database location, and rebuilds the database"""
-        # Grab the new folder
-        self.file_directory = new_folder
+        # Create the database file
+        self.database_location = Path(datafolder_location) / 'library.db'
+        self.database_location.parent.mkdir(parents=True, exist_ok=True)
+        self.database_location.touch(exist_ok=True)
 
-        # Create the full path
-        self.db_path = Path(new_folder) / 'MelatoninMusicPlayer' / 'library.db'
+        self.build()
 
-        # Make sure the path and file exists exists
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        self.rebuild()
-
-    def rebuild(self):
+    def build(self):
         """Rebuild (or build) the database"""
         # Get database
-        database = sqlite3.connect(str(self.db_path))
+        database = sqlite3.connect(str(self.database_location))
 
         # Turn on foreign key constraints (to be safe)
         database.execute('PRAGMA foreign_keys = ON')

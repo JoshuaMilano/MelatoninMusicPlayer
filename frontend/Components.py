@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFileDialog,
@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 from frontend.Widgets import MediaSlider
 from frontend.Dialogs import BuildDataFolderDialog
 from backend.AudioEngine import AudioEngine, EngineState
-from database.Database import Database
+from backend.Backend import DataFolder
 
 class MainWindow(QMainWindow):
     def __init__(self, title: str):
@@ -23,9 +23,11 @@ class MainWindow(QMainWindow):
         # Create the AudioEngine
         self.audio_engine = AudioEngine()
 
-        # Create the Database
-        self.database = Database()
-        self.check_db()
+        # Link the Datafolder class
+        self.datafolder = DataFolder()
+
+        # Check Datafolder Exists
+        self.check_datafolder_exists()
 
         # Window Config
         self.setWindowTitle(title)
@@ -44,29 +46,30 @@ class MainWindow(QMainWindow):
         widget.setLayout(layout)
         self.setCentralWidget(widget)
 
-        self.menu_bar = MenuBar(self.audio_engine, self.database)
+    #   self.menu_bar = MenuBar(self.audio_engine, self.database)
+        self.menu_bar = MenuBar(self.audio_engine,)
         self.setMenuBar(self.menu_bar)
 
     def closeEvent(self, event):
         self.audio_engine.stop_playback()
         return super().closeEvent(event)
 
-    def check_db(self):
-        if not self.database.db:
+    def check_datafolder_exists(self):
+        if not self.datafolder.datafolder_location:
             dialog = BuildDataFolderDialog(self)
             dialog.exec()
-            new_database_folder = dialog.folder_picker.path_display.text()
-            self.database.set_new_location(new_database_folder)
+            new_datafolder_location = dialog.data()
+            self.datafolder.setup_folder(new_datafolder_location)
 
 # class MainContent():
 
 class MenuBar(QMenuBar):
-    def __init__(self, audio_engine: AudioEngine, database: Database):
+    # def __init__(self, audio_engine: AudioEngine, database: Database):
+    def __init__(self, audio_engine: AudioEngine):
         super().__init__()
 
         # Pass the audio engine through
         self.audio_engine = audio_engine
-        self.database = database
 
         # File Menu
         file_menu = QMenu('&File', self)
@@ -78,7 +81,7 @@ class MenuBar(QMenuBar):
         # stop_song_action.setShortcut('CTRL+K')
         load_song_action.triggered.connect(self.load_song)
         stop_song_action.triggered.connect(self.stop_song)
-        rebuild_database_action.triggered.connect(self.rebuild_database)
+        # rebuild_database_action.triggered.connect(self.rebuild_database)
         file_menu.addAction(load_song_action)
         file_menu.addAction(stop_song_action)
         file_menu.addAction(rebuild_database_action)
@@ -113,8 +116,9 @@ class MenuBar(QMenuBar):
     def stop_song(self):
         self.audio_engine.stop_playback()   
 
-    def rebuild_database(self):
-        self.database.rebuild()
+    def rebuild_database_action(self):
+        # self.database.rebuild()
+        pass
 
 class ControlBar(QWidget):
     def __init__(self, audio_engine: AudioEngine):
@@ -183,3 +187,4 @@ class ControlBar(QWidget):
             self.play_pause_button.setEnabled(True)
             self.play_pause_button.setText('Play')
             self.duration_bar.setValue(0)
+            print('FINISHED')
