@@ -5,6 +5,7 @@ import gc
 import numpy as np
 
 from backend.SongHelpers import SongMetadata, get_song_metadata
+from backend.queue import Queue
 
 
 # TODO: Upgrade engine to support up to 32bit audio
@@ -52,7 +53,7 @@ class StreamProxy:
                 if self.engine.engine_state != EngineState.FINISHED:
                     self.engine.engine_state = EngineState.FINISHED
                     QMetaObject.invokeMethod(self.engine, 'reset_playback', Qt.QueuedConnection)
-                print('finished')
+                # print('finished')
                 return b''
 
             # HARDCODED 16BIT AUDIO
@@ -98,7 +99,6 @@ class StreamProxy:
     def close(self):
         pass
             
-
 # The purpose of the AudioEngine is to manage and play audio, as well as transmit signals from the backend to the frontend UI
 class AudioEngine(QObject):
     # Signal to relay total playback time (i.e. duration) to the frontend ui
@@ -116,11 +116,14 @@ class AudioEngine(QObject):
         # Create an empty stream object to hold the data stream going to the device
         self.stream = None
 
+        # Set Volume
         self.volume = DEBUG_VALUE_VOLUME
+
+        # Create music queue object
+        self.queue = Queue()
 
         # Create and Set Engine State
         self.engine_state: EngineState = EngineState.STOPPED
-
         self.engine_state_changed.emit(self.engine_state)
 
         # set the frames played to 0
@@ -141,9 +144,6 @@ class AudioEngine(QObject):
         if self.device.running:
             self.device.stop()
             self.engine_state = EngineState.STOPPED
-        
-        # update engine state
-        self.engine_state = EngineState.PLAYING
 
         # set frames played to 0
         self.frames_played = 0
@@ -153,6 +153,8 @@ class AudioEngine(QObject):
 
         # convert the file path to a str, and store it in a variable
         self.file_path_str = str(file_path)
+
+        self.queue.append(file_path)
 
         # Grab the metadata from mutagen, use get_song_metadata function
         metadata = get_song_metadata(file_path)
@@ -241,11 +243,67 @@ class AudioEngine(QObject):
 
         self.last_emitted_milliseconds = target_ms - (1000 // slider_framerate)
 
+    def play_next(self, path):
+        if self.device.running:
+            self.device.stop()
+            self.engine_state = EngineState.STOPPED
+        
+        # update engine state
+        self.engine_state = EngineState.PLAYING
+        
+        # set frames played to 0
+        self.frames_played = 0
+        
+        # Track last emitted millisecond of music
+        self.last_emitted_milliseconds = -(1000 // slider_framerate)
+
+        # convert the file path to a str, and store it in a variable
+        self.file_path_str = str(path)
+
+        # Grab the metadata from mutagen, use get_song_metadata function
+        metadata = get_song_metadata(path)
+
+        # If metadata exists
+        if metadata:
+            duration = metadata.duration_ms
+            self.total_playback_time.emit(duration)
+
+        # With file, read in binary mode, and load that data into memory.
+        with open(path, 'rb') as file:
+            audio_bytes = file.read()
+
+        # HARDCODED 16BIT AUDIO
+        self.file_in_memory = miniaudio.decode(
+            audio_bytes,
+            output_format=miniaudio.SampleFormat.SIGNED16
+        )
+
+        # Close the file if it didn't close automatically.
+        file.close()
+
+        self.device = miniaudio.PlaybackDevice(
+            # HARDCODED 16BIT AUDIO
+            output_format=miniaudio.SampleFormat.SIGNED16,
+            nchannels=self.file_in_memory.nchannels,
+            sample_rate=self.file_in_memory.sample_rate,
+            buffersize_msec= 1000 // slider_framerate
+        )
+
+        self.stream = StreamProxy(self.file_in_memory, self)
+
+        # Stream Song
+        self.device.start(self.stream)
+
+        # Update Engine State
+        
+        self.engine_state: EngineState = EngineState.PLAYING
+        self.engine_state_changed.emit(self.engine_state)
+            
+
     @Slot()
     def reset_playback(self):
         if self.device.running:
             self.device.stop()
-
             # Reset frames played to 0
             self.frames_played = 0
             # Track last emitted millisecond of music
@@ -255,3 +313,7 @@ class AudioEngine(QObject):
 
             self.engine_state = EngineState.PAUSED
             self.engine_state_changed.emit(self.engine_state)
+
+        if self.queue.current_song.next:
+            self.queue.current_song = self.queue.current_song.next
+            self.play_next(self.queue.current_song.data)

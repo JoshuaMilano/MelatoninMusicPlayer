@@ -76,14 +76,17 @@ class MenuBar(QMenuBar):
         self.addMenu(file_menu)
         load_song_action = QAction('Load Song', self)
         stop_song_action = QAction('Unload Song', self)
+        queue_song_action = QAction('Queue Song', self)
         rebuild_database_action = QAction('Rebuild Database', self)
         load_song_action.setShortcut('CTRL+L')
         # stop_song_action.setShortcut('CTRL+K')
         load_song_action.triggered.connect(self.load_song)
         stop_song_action.triggered.connect(self.stop_song)
+        queue_song_action.triggered.connect(self.queue_song)
         # rebuild_database_action.triggered.connect(self.rebuild_database)
         file_menu.addAction(load_song_action)
         file_menu.addAction(stop_song_action)
+        file_menu.addAction(queue_song_action)
         file_menu.addAction(rebuild_database_action)
 
         # Preferences Menu
@@ -112,6 +115,17 @@ class MenuBar(QMenuBar):
 
         if file_path:
             self.audio_engine.start_playback(file_path)
+
+    def queue_song(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            'Select and audio file',
+            '',
+            'Audio Files (*.mp3 *.wav *.flac)'
+        )
+
+        if file_path:
+            self.audio_engine.queue.append(file_path)
 
     def stop_song(self):
         self.audio_engine.stop_playback()   
