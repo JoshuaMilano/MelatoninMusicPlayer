@@ -1,5 +1,5 @@
 import miniaudio
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Qt, QObject, Signal, QMetaObject, Slot
 from enum import Enum, auto
 import gc
 import numpy as np
@@ -51,8 +51,8 @@ class StreamProxy:
             if not raw_chunk:
                 if self.engine.engine_state != EngineState.FINISHED:
                     self.engine.engine_state = EngineState.FINISHED
-                    self.engine.engine_state_changed.emit(self.engine.engine_state)
-                    print('finished')
+                    QMetaObject.invokeMethod(self.engine, 'reset_playback', Qt.QueuedConnection)
+                print('finished')
                 return b''
 
             # HARDCODED 16BIT AUDIO
@@ -240,3 +240,18 @@ class AudioEngine(QObject):
         self.frames_played = target_frame
 
         self.last_emitted_milliseconds = target_ms - (1000 // slider_framerate)
+
+    @Slot()
+    def reset_playback(self):
+        if self.device.running:
+            self.device.stop()
+
+            # Reset frames played to 0
+            self.frames_played = 0
+            # Track last emitted millisecond of music
+            self.last_emitted_milliseconds = -(1000 // slider_framerate)
+            # Reset current playback time
+            self.current_playback_time.emit(0)
+
+            self.engine_state = EngineState.PAUSED
+            self.engine_state_changed.emit(self.engine_state)

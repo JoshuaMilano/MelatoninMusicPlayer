@@ -165,6 +165,8 @@ class ControlBar(QWidget):
     def play_pause_music(self):
         if self.audio_engine.engine_state == EngineState.PLAYING:
             self.audio_engine.pause_playback()
+        elif self.audio_engine.engine_state == EngineState.FINISHED:
+            self.audio_engine.resume_playback()
         else:
             self.audio_engine.resume_playback()
 
@@ -182,9 +184,3 @@ class ControlBar(QWidget):
             self.play_pause_button.setEnabled(False)
             self.play_pause_button.setText('Play')
             self.duration_bar.setValue(0)
-        elif state == EngineState.FINISHED:
-            self.duration_bar.setEnabled(True)
-            self.play_pause_button.setEnabled(True)
-            self.play_pause_button.setText('Play')
-            self.duration_bar.setValue(0)
-            print('FINISHED')
