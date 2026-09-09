@@ -179,16 +179,17 @@ class ControlBar(QWidget):
             self.audio_engine.resume_playback()
 
     def sync_ui_to_engine(self, state: EngineState):
-        if state == EngineState.PLAYING:
-            self.duration_bar.setEnabled(True)
-            self.play_pause_button.setEnabled(True)
-            self.play_pause_button.setText('Pause')
-        elif state == EngineState.PAUSED:
-            self.duration_bar.setEnabled(True)
-            self.play_pause_button.setEnabled(True)
-            self.play_pause_button.setText('Play')
-        elif state == EngineState.STOPPED:
-            self.duration_bar.setEnabled(False)
-            self.play_pause_button.setEnabled(False)
-            self.play_pause_button.setText('Play')
-            self.duration_bar.setValue(0)
+        match state:
+            case EngineState.PLAYING:
+                self.duration_bar.setEnabled(True)
+                self.play_pause_button.setEnabled(True)
+                self.play_pause_button.setText('Pause')
+            case EngineState.PAUSED:
+                self.duration_bar.setEnabled(True)
+                self.play_pause_button.setEnabled(True)
+                self.play_pause_button.setText('Play')
+            case EngineState.STOPPED:
+                self.duration_bar.setEnabled(False)
+                self.play_pause_button.setEnabled(False)
+                self.play_pause_button.setText('Play')
+                self.duration_bar.setValue(0)
