@@ -114,7 +114,7 @@ class MenuBar(QMenuBar):
         )
 
         if file_path:
-            self.audio_engine.start_playback(file_path)
+            self.audio_engine.play(file_path)
 
     def queue_song(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -169,12 +169,6 @@ class ControlBar(QWidget):
     def update_slider_position(self, current_ms):
         if not self.duration_bar.isSliderDown():
             self.duration_bar.setValue(current_ms)
-
-    # def play_music(self):
-    #     self.audio_engine.resume_playback()
-
-    # def pause_music(self):
-    #     self.audio_engine.pause_playback()
 
     def play_pause_music(self):
         if self.audio_engine.engine_state == EngineState.PLAYING:
