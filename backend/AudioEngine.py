@@ -243,18 +243,18 @@ class AudioEngine(QObject):
             
 
     @Slot()
-    def reset_playback(self):
+    def reset_playback(self, *, start_paused: bool = True):
         if self.device.running:
-            self.device.stop()
+            if start_paused:
+                self.device.stop()
+                self.engine_state = EngineState.PAUSED
+                self.engine_state_changed.emit(self.engine_state)
             # Reset frames played to 0
             self.frames_played = 0
             # Track last emitted millisecond of music
             self.last_emitted_milliseconds = -(1000 // slider_framerate)
             # Reset current playback time
             self.current_playback_time.emit(0)
-
-            self.engine_state = EngineState.PAUSED
-            self.engine_state_changed.emit(self.engine_state)
 
         if self.queue.current_song.next:
             self.queue.current_song = self.queue.current_song.next

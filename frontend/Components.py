@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from frontend.Widgets import MediaSlider
 from frontend.Dialogs import BuildDataFolderDialog
+from frontend.Controls import MediaControls
 from backend.AudioEngine import AudioEngine, EngineState
 from backend.Backend import DataFolder
 
@@ -152,14 +153,14 @@ class ControlBar(QWidget):
         self.play_pause_button.setEnabled(False)
         self.play_pause_button.clicked.connect(self.play_pause_music)
 
-        # Add the play/pause button to layout
-        button_layout.addWidget(self.play_pause_button)
+        self.media_controls = MediaControls(audio_engine)
 
         # Create the layout
         layout = QVBoxLayout()
         self.setLayout(layout)
+        layout.addStretch()
         layout.addWidget(self.duration_bar)
-        layout.addLayout(button_layout)
+        layout.addWidget(self.media_controls)
 
         self.audio_engine.total_playback_time.connect(self.duration_bar.setMaximum)
         self.audio_engine.current_playback_time.connect(self.update_slider_position)
