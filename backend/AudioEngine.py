@@ -5,7 +5,7 @@ import gc
 import numpy as np
 
 from backend.SongHelpers import SongMetadata, get_song_metadata
-from backend.queue import Queue
+from backend.Queue import Queue
 
 
 # TODO: Upgrade engine to support up to 32bit audio

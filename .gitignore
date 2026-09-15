@@ -2,8 +2,11 @@ env/
 __pycache__/
 TEST_MUSIC
 .vscode
+dev/
 
 *.sql
+*.png
+*.jpg
 
 requirements.txt
 MelatoninMusicPlayer
