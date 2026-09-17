@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import mutagen
 
-from backend.BackendHelpers import get_primary_artist
+from backend.BackendHelpers import get_primary_artist, sanitise_data
 
 @dataclass
 class SongMetadata:
@@ -14,7 +14,7 @@ class SongMetadata:
     duration_ms: int
 
 
-def get_song_metadata(file_path_str):
+def get_song_metadata(file_path_str, *, sanitise: bool = False):
     file_path = Path(file_path_str)
     try:
         audio = mutagen.File(file_path, easy=True)
@@ -29,11 +29,20 @@ def get_song_metadata(file_path_str):
     raw_album = audio.get('album', ['Unknown Album'])[0]
     raw_album_artist = get_primary_artist((audio.get('albumartist') or audio.get('artist', ['Unknown Artist']))[0])
     raw_duration = int(audio.info.length)
-    
-    return SongMetadata(
-        title = raw_title,
-        artist = raw_artist,
-        album = raw_album,
-        album_artist = raw_album_artist,
-        duration_ms = raw_duration * 1000
-    )
+
+    if sanitise == True:
+        return SongMetadata(
+            title = sanitise_data(raw_title),
+            artist = sanitise_data(raw_artist),
+            album = sanitise_data(raw_album),
+            album_artist = sanitise_data(raw_album_artist),
+            duration_ms = raw_duration * 1000
+        )
+    else:
+        return SongMetadata(
+            title = raw_title,
+            artist = raw_artist,
+            album = raw_album,
+            album_artist = raw_album_artist,
+            duration_ms = raw_duration * 1000
+        )

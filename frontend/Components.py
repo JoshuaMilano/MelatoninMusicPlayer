@@ -1,3 +1,4 @@
+from pathlib import Path
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
@@ -15,17 +16,23 @@ from frontend.Widgets import MediaSlider
 from frontend.Dialogs import BuildDataFolderDialog
 from frontend.Controls import MediaControls
 from backend.AudioEngine import AudioEngine, EngineState
-from backend.Backend import DataFolder
+from backend.Backend import Backend
 
 class MainWindow(QMainWindow):
     def __init__(self, title: str):
         super().__init__()
 
-        # Create the AudioEngine
-        self.audio_engine = AudioEngine()
+        # Attach the backend
+        self.backend = Backend()
 
-        # Link the Datafolder class
-        self.datafolder = DataFolder()
+        # Access Datafolder directly
+        self.data_folder = self.backend.data_folder
+
+        # Access AudioEngine directly
+        self.audio_engine = self.backend.audio_engine
+
+        # Access FileManager directly
+        self.file_manager = self.backend.file_manager
 
         # Check Datafolder Exists
         self.check_datafolder_exists()
@@ -48,7 +55,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
     #   self.menu_bar = MenuBar(self.audio_engine, self.database)
-        self.menu_bar = MenuBar(self.audio_engine,)
+        self.menu_bar = MenuBar(self.backend,)
         self.setMenuBar(self.menu_bar)
 
     def closeEvent(self, event):
@@ -56,21 +63,30 @@ class MainWindow(QMainWindow):
         return super().closeEvent(event)
 
     def check_datafolder_exists(self):
-        if not self.datafolder.datafolder_location:
+        if not self.data_folder.datafolder_location:
             dialog = BuildDataFolderDialog(self)
             dialog.exec()
             new_datafolder_location = dialog.data()
-            self.datafolder.setup_folder(new_datafolder_location)
+            self.data_folder.setup_folder(new_datafolder_location)
 
 # class MainContent():
 
 class MenuBar(QMenuBar):
     # def __init__(self, audio_engine: AudioEngine, database: Database):
-    def __init__(self, audio_engine: AudioEngine):
+    def __init__(self, backend: Backend):
         super().__init__()
 
+        # Access Datafolder directly
+        self.data_folder = backend.data_folder
+
+        # Access AudioEngine directly
+        self.audio_engine = backend.audio_engine
+
+        # Access FileManager directly
+        self.file_manager = backend.file_manager
+
         # Pass the audio engine through
-        self.audio_engine = audio_engine
+        self.audio_engine = self.audio_engine
 
         # File Menu
         file_menu = QMenu('&File', self)
@@ -78,16 +94,22 @@ class MenuBar(QMenuBar):
         load_song_action = QAction('Load Song', self)
         stop_song_action = QAction('Unload Song', self)
         queue_song_action = QAction('Queue Song', self)
+        # DEBUG DEBUG DEBUG === DO NOT COMMIT
+        sort_folder_action = QAction('Sort Folder', self)
         rebuild_database_action = QAction('Rebuild Database', self)
         load_song_action.setShortcut('CTRL+L')
         # stop_song_action.setShortcut('CTRL+K')
         load_song_action.triggered.connect(self.load_song)
         stop_song_action.triggered.connect(self.stop_song)
         queue_song_action.triggered.connect(self.queue_song)
+        # DEBUG DEBUG DEBUG === DO NOT COMMIT
+        sort_folder_action.triggered.connect(self.sort_folder)
         # rebuild_database_action.triggered.connect(self.rebuild_database)
         file_menu.addAction(load_song_action)
         file_menu.addAction(stop_song_action)
         file_menu.addAction(queue_song_action)
+        # DEBUG DEBUG DEBUG === DO NOT COMMIT
+        file_menu.addAction(sort_folder_action)
         file_menu.addAction(rebuild_database_action)
 
         # Preferences Menu
@@ -129,7 +151,15 @@ class MenuBar(QMenuBar):
             self.audio_engine.queue.append(file_path)
 
     def stop_song(self):
-        self.audio_engine.stop_playback()   
+        self.audio_engine.stop_playback()
+        
+    # DEBUG DEBUG DEBUG === DO NOT COMMIT
+    def sort_folder(self):
+        musicfolder = QFileDialog.getExistingDirectory(
+            self,
+            'Select Music Folder'
+        )
+        self.file_manager.sort_music_folder(Path(musicfolder))
 
     def rebuild_database_action(self):
         # self.database.rebuild()

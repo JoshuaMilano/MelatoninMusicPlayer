@@ -2,6 +2,7 @@ import shutil, mutagen
 from pathlib import Path
 
 from backend.SongHelpers import SongMetadata, get_song_metadata
+from backend.BackendHelpers import move_album_img, move_artist_img, remove_empty_folders
 
 class FileManager():
     """Runs operations on files and retrieves file data"""
@@ -28,7 +29,7 @@ class FileManager():
 
         for file_path in audio_files:
             try:
-                metadata = get_song_metadata(file_path)
+                metadata = get_song_metadata(file_path, sanitise=True)
 
                 if metadata is None:
                     continue
@@ -42,12 +43,14 @@ class FileManager():
                 new_file_path = album_folder / f'{metadata.title}{file_path.suffix.lower()}'
 
                 if album_folder not in processed_albums:
-                    # TODO: Move Album image to new folder
+                    move_album_img(old_album_folder=file_path.parent, new_album_folder=album_folder, allowed_extensions=self.supported_image_extensions)
                     processed_albums.add(album_folder)
 
                 if artist_folder not in processed_artists:
-                    # TODO: Move Artist image to new folder
+                    move_artist_img(old_album_folder=file_path.parent, artist_folder=artist_folder, allowed_extensions=self.supported_image_extensions)
                     processed_artists.add(artist_folder)
+
+                # TODO: Add support for .lrc files
 
                 if not new_file_path.exists():
                     shutil.move(file_path, new_file_path)
@@ -57,7 +60,6 @@ class FileManager():
 
             except Exception as e:
                 print(e)
-    
 
-    def get_music_files(self):
-        pass
+        remove_empty_folders(unsorted_music_folder)
+        print('Done Sorting')

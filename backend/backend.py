@@ -2,10 +2,23 @@ from pathlib import Path
 from platformdirs import user_data_path
 
 from database.Database import Database
+from backend.FileManager import FileManager
+from backend.AudioEngine import AudioEngine
+
+class Backend():
+    def __init__(self):
+        # Create variable for Datafolder Class
+        self.data_folder = DataFolder()
+
+        # Create variable for FileManager
+        self.file_manager = FileManager()
+
+        # Create variable for AudioEngine
+        self.audio_engine = AudioEngine()
 
 class DataFolder():
     def __init__(self):
-        # Create variable to store Database Class
+        # Create variable for Database Class
         self.database = None
 
         # Default Path

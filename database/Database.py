@@ -17,7 +17,7 @@ class Database():
         self.database_location.touch(exist_ok=True)
 
         self.create_db()
-        self.build_db()
+        # self.build_db()
 
     def create_db(self):
         """Rebuild (or build) the database"""
